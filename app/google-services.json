@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "319459174",
+    "project_id": "kidelist",
+    "storage_bucket": "kidelist.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:319459174:android:8f3cf71a510773e2f402a7",
+        "android_client_info": {
+          "package_name": "com.example.kidelist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPPs4Z0l8Bnq6W1OR8xX0i9P18q7nuaC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
