@@ -1,9 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.KiDelist" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <style name="Base.Theme.KiDelist" parent="Theme.Material3.Light.NoActionBar">
+
+        <!-- Evita o Android tentar escurecer "por conta" -->
+        <item name="android:forceDarkAllowed">false</item>
+
+        <!-- Primárias -->
+        <item name="colorPrimary">@color/kidelist_blue</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+
+        <item name="colorSecondary">@color/kidelist_blue_light</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+
+        <!-- Background / Surface (Material 3 usa MUITO isso) -->
+        <item name="android:colorBackground">@color/kidelist_background</item>
+
+        <item name="colorSurface">@color/kidelist_surface</item>
+        <item name="colorOnSurface">@android:color/black</item>
+
+
+
     </style>
 
     <style name="Theme.KiDelist" parent="Base.Theme.KiDelist" />
+
 </resources>

@@ -8,8 +8,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.kidelist"
-        minSdk = 35
-        targetSdk = 35
+        minSdk = 29
+        targetSdk = 29
         versionCode = 1
         versionName = "1.0"
 
