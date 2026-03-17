@@ -23,8 +23,8 @@
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardLogin"
-        android:layout_width="364dp"
-        android:layout_height="319dp"
+        android:layout_width="304dp"
+        android:layout_height="316dp"
         android:layout_marginStart="24dp"
         android:layout_marginTop="40dp"
         android:layout_marginEnd="24dp"
@@ -78,14 +78,14 @@
                 android:layout_marginTop="24dp"
                 android:background="@drawable/bg_botao_amarelo"
                 android:elevation="4dp"
-                android:stateListAnimator="@animator/button_elevation"
                 android:fontFamily="@font/roboto_bold"
+                android:stateListAnimator="@animator/button_elevation"
                 android:text="ENTRAR"
                 android:textAllCaps="true"
                 android:textColor="#33428C"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                app:backgroundTint="@null"/>
+                app:backgroundTint="@null" />
 
         </LinearLayout>
 
