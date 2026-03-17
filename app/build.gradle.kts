@@ -5,16 +5,13 @@ plugins {
 
 android {
     namespace = "com.example.kidelist"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.kidelist"
         minSdk = 29
-<<<<<<< HEAD
         targetSdk = 29
-=======
         targetSdk = 35
->>>>>>> 1bea05b95774af52b42955570f600682956ccd72
         versionCode = 1
         versionName = "1.0"
 
@@ -38,6 +35,9 @@ android {
 
 dependencies {
 
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

@@ -5,7 +5,7 @@
 
     <color name="kidelist_background">#F8F9FA</color>
     <color name="kidelist_surface">#FFFFFF</color>
-
+    <color name="kidelist_primary">#33428C</color>
 
 </resources>
 

@@ -1,14 +1,13 @@
 package com.example.kidelist;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -32,12 +31,10 @@ public class ChecklistActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checklist);
-
+        FooterNavigation.setup(this, FooterNavigation.TELA_TAREFAS);
         RecyclerView rv = findViewById(R.id.rvTarefas);
-        MaterialButton btnSalvar = findViewById(R.id.btnSalvar);
         MaterialCardView cardNovaTarefa = findViewById(R.id.cardNovaTarefa);
 
-        //teste do login
         txtTitulo = findViewById(R.id.txtTitulo);
         txtGerente = findViewById(R.id.txtGerente);
         txtNotaMensal = findViewById(R.id.txtNotaMensal);
@@ -47,16 +44,11 @@ public class ChecklistActivity extends AppCompatActivity {
 
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
-            finish(); // ou volta pro login
+            finish();
             return;
         }
 
         carregarHeader(user.getUid());
-
-        // Dados fake (exemplo)
-        // tarefas.add(new TarefaChecklist("Nome_Tarefa", 3, true));
-        //tarefas.add(new TarefaChecklist("Nome_Tarefa", 0, false));
-        // tarefas.add(new TarefaChecklist("Nome_Tarefa", 3, true));
 
         adapter = new TarefaChecklistAdapter(tarefas);
 
@@ -64,14 +56,8 @@ public class ChecklistActivity extends AppCompatActivity {
         rv.setAdapter(adapter);
 
         cardNovaTarefa.setOnClickListener(v -> {
-            tarefas.add(0, new TarefaChecklist("Nova tarefa", 0, false));
-            adapter.notifyItemInserted(0);
-            rv.scrollToPosition(0);
-        });
-
-        btnSalvar.setOnClickListener(v -> {
-            // Aqui você envia pro banco/api/etc.
-            Toast.makeText(this, "Salvo! (" + tarefas.size() + " tarefas)", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(ChecklistActivity.this, CriarTarefaActivity.class);
+            startActivity(intent);
         });
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
@@ -116,8 +102,6 @@ public class ChecklistActivity extends AppCompatActivity {
                         pontosTotal = n.doubleValue();
                     }
 
-                    // Se você quer “percentual”, precisa definir uma regra.
-                    // Por enquanto vou mostrar pontos:
                     txtNotaMensal.setText("Pontos mês: " + (int) pontosTotal);
                 });
     }

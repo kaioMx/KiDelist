@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FDD835"
+    tools:context=".CriarTarefaActivity">
+
+    <!-- TOPO -->
+    <LinearLayout
+        android:id="@+id/layoutTopo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#0E3B66"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="18dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/btnVoltar"
+            android:layout_width="30dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="@android:color/white" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="15dp"
+            android:text="Nova Tarefa"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- SCROLL -->
+    <ScrollView
+        android:id="@+id/scrollFormulario"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingStart="20dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="110dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutTopo">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- CARD -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_card_tarefa"
+                android:elevation="6dp"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <!-- TITULO -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Título"
+                    android:textColor="#33428C"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etTitulo"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/bg_input_tarefa"
+                    android:hint="Digite o título da tarefa"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp" />
+
+                <!-- DESCRIÇÃO -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Descrição"
+                    android:textColor="#33428C"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etDescricao"
+                    android:layout_width="match_parent"
+                    android:layout_height="110dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/bg_input_tarefa"
+                    android:gravity="top"
+                    android:hint="Descreva os detalhes"
+                    android:inputType="textMultiLine"
+                    android:padding="14dp" />
+
+                <!-- DATA -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Data e Hora"
+                    android:textColor="#33428C"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="14dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnSelecionarData"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_input_tarefa"
+                        android:fontFamily="@font/roboto_bold"
+                        android:text="Selecionar data"
+                        android:textAllCaps="false"
+                        android:textColor="#FFFFFF"
+                        app:iconTint="#FFFFFF"
+                        app:rippleColor="#F0F0F0"
+                        app:strokeColor="#FFFFFF" />
+
+                    <Space
+                        android:layout_width="10dp"
+                        android:layout_height="wrap_content" />
+
+                    <Button
+                        android:id="@+id/btnSelecionarHora"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_input_tarefa"
+                        android:fontFamily="@font/roboto_bold"
+                        android:text="Selecionar hora"
+                        android:textAllCaps="false"
+                        android:textColor="#FFFFFF" />
+                </LinearLayout>
+
+                <!-- CHECKBOX REPETIÇÃO -->
+                <CheckBox
+                    android:id="@+id/cbRepetir"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Repetir tarefa"
+                    android:textColor="#33428C"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <!-- TIPO REPETIÇÃO -->
+                <Spinner
+                    android:id="@+id/spTipoRepeticao"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/bg_input_tarefa"
+                    android:visibility="gone" />
+
+                <!-- BOTÃO SALVAR -->
+                <Button
+                    android:id="@+id/btnSalvarTarefa"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_botao_salvar_tarefa"
+                    android:elevation="8dp"
+                    android:fontFamily="@font/roboto_bold"
+                    android:text="Salvar tarefa"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- FOOTER -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/footerNav"
+        android:layout_width="200dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="24dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:id="@+id/btnTarefas"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:background="@drawable/bg_footer_item_inactive">
+
+                <ImageView
+                    android:id="@+id/iconTarefas"
+                    android:layout_width="36dp"
+                    android:layout_height="30dp"
+                    android:src="@drawable/ic_tarefa"
+                    app:tint="#8A94A6" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnRanking"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:background="@drawable/bg_footer_item_inactive">
+
+                <ImageView
+                    android:id="@+id/iconRanking"
+                    android:layout_width="40dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/ic_ranking"
+                    app:tint="#8A94A6" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

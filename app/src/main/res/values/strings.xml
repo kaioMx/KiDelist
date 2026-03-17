@@ -1,3 +1,16 @@
 <resources>
-    <string name="app_name">Ki Delist</string>
+    <string name="app_name">KiDelist</string>
+
+    <string-array name="prioridades_array">
+        <item>Baixa</item>
+        <item>Média</item>
+        <item>Alta</item>
+    </string-array>
+
+    <string-array name="tipos_repeticao_array">
+        <item>Não repetir</item>
+        <item>Diariamente</item>
+        <item>Semanalmente</item>
+        <item>Mensalmente</item>
+    </string-array>
 </resources>

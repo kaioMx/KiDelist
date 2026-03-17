@@ -4,21 +4,17 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-<<<<<<< HEAD
-        <DropdownSelection timestamp="2026-03-09T18:29:42.983532900Z">
+        <DropdownSelection timestamp="2026-03-16T20:08:51.535120900Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\kaiom\.android\avd\Pixel_5_API_36.avd" />
-=======
-        <DropdownSelection timestamp="2026-02-26T15:47:30.206264900Z">
-          <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=R9XT707N4MP" />
->>>>>>> 1bea05b95774af52b42955570f600682956ccd72
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\kaiom\.android\avd\Pixel_2_API_29.avd" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="CriarTarefaActivity">
+        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>
