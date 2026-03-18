@@ -38,15 +38,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:layout_marginTop="15dp"
             android:layout_marginEnd="12dp"
-            android:layout_marginTop="8dp"
             android:text="CheckList - NomeLoja"
             android:textColor="#FFFFFF"
-            android:textStyle="bold"
             android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/btnBack"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
             android:id="@+id/rowInfo"
@@ -148,50 +148,55 @@
         app:cardCornerRadius="30dp"
         app:cardElevation="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:weightSum="2">
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
+            android:id="@+id/btnTarefas"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
             android:gravity="center"
-            android:weightSum="2">
+            android:orientation="vertical"
+            android:background="@drawable/bg_footer_item_inactive">
 
-            <LinearLayout
-                android:id="@+id/btnTarefas"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <ImageView
-                    android:id="@+id/iconTarefas"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/ic_tarefa"
-                    app:tint="#33428C"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/btnRanking"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <ImageView
-                    android:id="@+id/iconRanking"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/ic_ranking"
-                    app:tint="#33428C"/>
-            </LinearLayout>
-
+            <ImageView
+                android:id="@+id/iconTarefas"
+                android:layout_width="36dp"
+                android:layout_height="30dp"
+                android:src="@drawable/ic_tarefa"
+                app:tint="#8A94A6" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/btnRanking"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:background="@drawable/bg_footer_item_inactive">
+
+            <ImageView
+                android:id="@+id/iconRanking"
+                android:layout_width="40dp"
+                android:layout_height="50dp"
+                android:src="@drawable/ic_ranking"
+                app:tint="#8A94A6" />
+        </LinearLayout>
+
+    </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

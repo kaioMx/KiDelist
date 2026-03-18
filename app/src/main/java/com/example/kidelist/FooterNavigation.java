@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
-
+import com.example.kidelist.RankingActivity;
 import androidx.core.content.ContextCompat;
 
 public class FooterNavigation {
@@ -48,7 +48,9 @@ public class FooterNavigation {
 
             btnRanking.setOnClickListener(v -> {
                 if (telaAtual != TELA_RANKING) {
-                    Toast.makeText(activity, "Ranking em desenvolvimento 🏆", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(activity, RankingActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    activity.startActivity(intent);
                 }
             });
         }
