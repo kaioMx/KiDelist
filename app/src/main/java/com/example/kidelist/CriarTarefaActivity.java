@@ -12,18 +12,24 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
-import com.example.kidelist.FooterNavigation;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.ArrayList;
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.util.Calendar;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class CriarTarefaActivity extends AppCompatActivity {
 
     private EditText etTitulo, etDescricao;
-    private Spinner  spTipoRepeticao;
+    private Spinner spTipoRepeticao;
     private Button btnSelecionarData, btnSelecionarHora, btnSalvarTarefa;
     private CheckBox cbRepetir;
     private ImageView btnVoltar;
@@ -31,10 +37,16 @@ public class CriarTarefaActivity extends AppCompatActivity {
     private String dataSelecionada = "";
     private String horaSelecionada = "";
 
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_criar_tarefa);
+
+        db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
 
         inicializarViews();
         configurarSpinnerRepeticao();
@@ -53,7 +65,6 @@ public class CriarTarefaActivity extends AppCompatActivity {
         btnVoltar = findViewById(R.id.btnVoltar);
     }
 
-
     private void configurarSpinnerRepeticao() {
         ArrayAdapter<CharSequence> adapterRepeticao = ArrayAdapter.createFromResource(
                 this,
@@ -62,7 +73,6 @@ public class CriarTarefaActivity extends AppCompatActivity {
         );
         adapterRepeticao.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spTipoRepeticao.setAdapter(adapterRepeticao);
-
         spTipoRepeticao.setVisibility(View.GONE);
     }
 
@@ -71,10 +81,10 @@ public class CriarTarefaActivity extends AppCompatActivity {
             Intent intent = new Intent(CriarTarefaActivity.this, ChecklistActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
+            finish();
         });
 
         btnSelecionarData.setOnClickListener(v -> abrirDatePicker());
-
         btnSelecionarHora.setOnClickListener(v -> abrirTimePicker());
 
         cbRepetir.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -160,22 +170,48 @@ public class CriarTarefaActivity extends AppCompatActivity {
             return;
         }
 
-        if (repetir && spTipoRepeticao.getSelectedItem() == null) {
-            Toast.makeText(this, "Selecione o tipo de repetição", Toast.LENGTH_SHORT).show();
+        FirebaseUser usuario = auth.getCurrentUser();
+        if (usuario == null) {
+            Toast.makeText(this, "Usuário não autenticado", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Aqui depois você troca pelo INSERT no banco
-        String mensagem = "Tarefa salva com sucesso!\n\n" +
-                "Título: " + titulo + "\n" +
-                "Descrição: " + descricao + "\n" +
-                "Data: " + dataSelecionada + "\n" +
-                "Hora: " + horaSelecionada + "\n" +
-                "Repetição: " + tipoRepeticao;
+        btnSalvarTarefa.setEnabled(false);
 
-        Toast.makeText(this, mensagem, Toast.LENGTH_LONG).show();
+        Map<String, Object> tarefa = new HashMap<>();
+        tarefa.put("titulo", titulo);
+        tarefa.put("descricao", descricao);
+        tarefa.put("data", dataSelecionada);
+        tarefa.put("hora", horaSelecionada);
+        tarefa.put("repetir", repetir);
+        tarefa.put("tipoRepeticao", tipoRepeticao);
+        tarefa.put("concluida", false);
+        tarefa.put("userId", usuario.getUid());
+        tarefa.put("createdAt", Timestamp.now());
 
-        limparCampos();
+        db.collection("tarefas")
+                .add(tarefa)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(
+                            CriarTarefaActivity.this,
+                            "Tarefa salva com sucesso!",
+                            Toast.LENGTH_SHORT
+                    ).show();
+
+                    limparCampos();
+                    btnSalvarTarefa.setEnabled(true);
+
+                    // opcional: voltar para checklist
+                    // finish();
+                })
+                .addOnFailureListener(e -> {
+                    btnSalvarTarefa.setEnabled(true);
+                    Toast.makeText(
+                            CriarTarefaActivity.this,
+                            "Erro ao salvar: " + e.getMessage(),
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
     }
 
     private void limparCampos() {

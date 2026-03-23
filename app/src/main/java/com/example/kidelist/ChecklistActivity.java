@@ -31,7 +31,9 @@ public class ChecklistActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checklist);
+
         FooterNavigation.setup(this, FooterNavigation.TELA_TAREFAS);
+
         RecyclerView rv = findViewById(R.id.rvTarefas);
         MaterialCardView cardNovaTarefa = findViewById(R.id.cardNovaTarefa);
 
@@ -51,7 +53,6 @@ public class ChecklistActivity extends AppCompatActivity {
         carregarHeader(user.getUid());
 
         adapter = new TarefaChecklistAdapter(tarefas);
-
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
 
@@ -61,6 +62,39 @@ public class ChecklistActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        FirebaseUser user = auth.getCurrentUser();
+        if (user != null) {
+            carregarTarefas(user.getUid());
+        }
+    }
+
+    private void carregarTarefas(String uid) {
+        db.collection("tarefas")
+                .whereEqualTo("userId", uid)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    tarefas.clear();
+
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        String titulo = doc.getString("titulo");
+                        Boolean concluida = doc.getBoolean("concluida");
+
+                        TarefaChecklist tarefa = new TarefaChecklist();
+                        tarefa.setNome(titulo != null ? titulo : "Sem título");
+                        tarefa.setFeito(concluida != null && concluida);
+                        tarefa.setNota(0);
+
+                        tarefas.add(tarefa);
+                    }
+
+                    adapter.notifyDataSetChanged();
+                });
     }
 
     private void carregarHeader(String uid) {

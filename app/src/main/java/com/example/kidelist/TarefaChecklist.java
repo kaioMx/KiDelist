@@ -5,6 +5,10 @@ public class TarefaChecklist {
     private int nota; // 0 = não avaliado, 1..5 = avaliado
     private boolean feito; // true = FEITO, false = PENDENTE
 
+
+    public TarefaChecklist(){
+    }
+
     public TarefaChecklist(String nome, int nota, boolean feito) {
         this.nome = nome;
         this.nota = nota;
