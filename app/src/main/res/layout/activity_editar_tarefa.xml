@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FDD835"
-    tools:context=".CriarTarefaActivity">
+    tools:context=".EditarTarefaActivity">
 
     <!-- TOPO -->
     <LinearLayout
@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="15dp"
-            android:text="Nova Tarefa"
+            android:text="Editar Tarefa"
             android:textColor="@android:color/white"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -85,7 +85,7 @@
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="14dp"
                     android:background="@drawable/bg_input_tarefa"
-                    android:hint="Digite o título da tarefa"
+                    android:hint="Edite o título da tarefa"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp" />
 
@@ -105,7 +105,7 @@
                     android:layout_marginBottom="14dp"
                     android:background="@drawable/bg_input_tarefa"
                     android:gravity="top"
-                    android:hint="Descreva os detalhes"
+                    android:hint="Edite os detalhes"
                     android:inputType="textMultiLine"
                     android:padding="14dp" />
 
@@ -131,13 +131,10 @@
                         android:layout_weight="1"
                         android:background="@drawable/bg_input_tarefa"
                         android:fontFamily="@font/roboto_bold"
-                        android:text="Selecionar data"
+                        android:text="Alterar data"
                         android:textAllCaps="false"
                         android:textColor="#FFFFFF"
-                        android:textSize="12dp"
-                        app:iconTint="#FFFFFF"
-                        app:rippleColor="#F0F0F0"
-                        app:strokeColor="#FFFFFF" />
+                        android:textSize="12sp" />
 
                     <Space
                         android:layout_width="10dp"
@@ -150,10 +147,10 @@
                         android:layout_weight="1"
                         android:background="@drawable/bg_input_tarefa"
                         android:fontFamily="@font/roboto_bold"
-                        android:text="Selecionar hora"
+                        android:text="Alterar hora"
                         android:textAllCaps="false"
                         android:textColor="#FFFFFF"
-                        android:textSize="12dp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- CHECKBOX REPETIÇÃO -->
@@ -176,15 +173,15 @@
                     android:background="@drawable/bg_input_tarefa"
                     android:visibility="gone" />
 
-                <!-- BOTÃO SALVAR -->
+                <!-- BOTÃO ATUALIZAR -->
                 <Button
-                    android:id="@+id/btnSalvarTarefa"
+                    android:id="@+id/btnAtualizarTarefa"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:background="@drawable/bg_botao_salvar_tarefa"
                     android:elevation="8dp"
                     android:fontFamily="@font/roboto_bold"
-                    android:text="Salvar tarefa"
+                    android:text="Atualizar tarefa"
                     android:textAllCaps="false"
                     android:textColor="#FFFFFF"
                     android:textSize="16sp"

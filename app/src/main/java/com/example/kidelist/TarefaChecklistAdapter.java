@@ -1,5 +1,7 @@
 package com.example.kidelist;
 
+import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,27 +36,32 @@ public class TarefaChecklistAdapter extends RecyclerView.Adapter<TarefaChecklist
 
         h.txtNomeTarefa.setText(item.getNome());
 
-        // Status
+        h.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), EditarTarefaActivity.class);
+
+            intent.putExtra("nome", item.getNome());
+            intent.putExtra("nota", item.getNota());
+            intent.putExtra("feito", item.isFeito());
+
+            v.getContext().startActivity(intent);
+        });
+
         if (item.isFeito()) {
             h.txtStatus.setText("FEITO");
-            h.txtStatus.setTextColor(0xFF27AE60); // verde
+            h.txtStatus.setTextColor(0xFF27AE60);
         } else {
             h.txtStatus.setText("PENDENTE");
-            h.txtStatus.setTextColor(0xFFF2994A); // laranja
+            h.txtStatus.setTextColor(0xFFF2994A);
         }
 
-        // Aplicar cores nos botões de nota (sempre reaplica para não "vazar" ao reciclar)
         aplicarEstiloNotas(h, item.getNota());
 
-        // Clique em cada nota (NÃO usar 'position' capturado!)
         h.btn1.setOnClickListener(v -> atualizarNota(h.getAdapterPosition(), 1));
         h.btn2.setOnClickListener(v -> atualizarNota(h.getAdapterPosition(), 2));
         h.btn3.setOnClickListener(v -> atualizarNota(h.getAdapterPosition(), 3));
         h.btn4.setOnClickListener(v -> atualizarNota(h.getAdapterPosition(), 4));
         h.btn5.setOnClickListener(v -> atualizarNota(h.getAdapterPosition(), 5));
 
-
-        // Exemplo: clique no botão câmera (você liga sua lógica depois)
         h.btnCamera.setOnClickListener(v -> {
             // TODO: abrir câmera/galeria
         });
@@ -64,14 +71,12 @@ public class TarefaChecklistAdapter extends RecyclerView.Adapter<TarefaChecklist
         if (position == RecyclerView.NO_POSITION) return;
 
         itens.get(position).setNota(nota);
-        // regra simples: se avaliou, marca feito (você pode mudar)
         itens.get(position).setFeito(true);
 
         notifyItemChanged(position);
     }
 
     private void aplicarEstiloNotas(VH h, int notaSelecionada) {
-        // padrão: azul escuro
         setBtnStyle(h.btn1, notaSelecionada == 1);
         setBtnStyle(h.btn2, notaSelecionada == 2);
         setBtnStyle(h.btn3, notaSelecionada == 3);
@@ -81,11 +86,11 @@ public class TarefaChecklistAdapter extends RecyclerView.Adapter<TarefaChecklist
 
     private void setBtnStyle(MaterialButton btn, boolean selected) {
         if (selected) {
-            btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFF4B400)); // amarelo
-            btn.setTextColor(0xFF0E3B66); // azul escuro
+            btn.setBackgroundTintList(ColorStateList.valueOf(0xFFF4B400));
+            btn.setTextColor(0xFF0E3B66);
         } else {
-            btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF0E3B66)); // azul
-            btn.setTextColor(0xFFFFFFFF); // branco
+            btn.setBackgroundTintList(ColorStateList.valueOf(0xFF0E3B66));
+            btn.setTextColor(0xFFFFFFFF);
         }
     }
 
@@ -101,6 +106,7 @@ public class TarefaChecklistAdapter extends RecyclerView.Adapter<TarefaChecklist
 
         VH(@NonNull View itemView) {
             super(itemView);
+
             txtNomeTarefa = itemView.findViewById(R.id.txtNomeTarefa);
             txtStatus = itemView.findViewById(R.id.txtStatus);
 
