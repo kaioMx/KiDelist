@@ -3,6 +3,7 @@ package com.example.kidelist;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -52,7 +54,14 @@ public class ChecklistActivity extends AppCompatActivity {
 
         carregarHeader(user.getUid());
 
-        adapter = new TarefaChecklistAdapter(tarefas);
+        adapter = new TarefaChecklistAdapter(tarefas, () -> {
+
+            FirebaseUser currentUser = auth.getCurrentUser();
+
+            if (currentUser != null) {
+                calcularPercentualUsuario(currentUser.getUid());
+            }
+        });
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
 
@@ -71,30 +80,42 @@ public class ChecklistActivity extends AppCompatActivity {
         FirebaseUser user = auth.getCurrentUser();
         if (user != null) {
             carregarTarefas(user.getUid());
+            calcularPercentualUsuario(user.getUid());
         }
     }
 
     private void carregarTarefas(String uid) {
         db.collection("tarefas")
-                .whereEqualTo("userId", uid)
+                //.whereEqualTo("userId", uid)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     tarefas.clear();
 
-                    for (com.google.firebase.firestore.DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
                         String titulo = doc.getString("titulo");
+                        String descricao = doc.getString("descricao");
                         Boolean concluida = doc.getBoolean("concluida");
+                        Long notaLong = doc.getLong("nota");
+                        String fotoUrl = doc.getString("fotoUrl");
 
                         TarefaChecklist tarefa = new TarefaChecklist();
+
+                        tarefa.setId(doc.getId());
                         tarefa.setNome(titulo != null ? titulo : "Sem título");
+                        tarefa.setDescricao(descricao != null ? descricao : "");
                         tarefa.setFeito(concluida != null && concluida);
-                        tarefa.setNota(0);
+                        tarefa.setNota(notaLong != null ? notaLong.intValue() : 0);
+                        tarefa.setFotoLocal(fotoUrl != null ? fotoUrl : "");
+                        tarefa.setUserId(doc.getString("userId"));
 
                         tarefas.add(tarefa);
                     }
 
                     adapter.notifyDataSetChanged();
-                });
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Erro ao carregar tarefas", Toast.LENGTH_SHORT).show()
+                );
     }
 
     private void carregarHeader(String uid) {
@@ -109,7 +130,7 @@ public class ChecklistActivity extends AppCompatActivity {
 
                     if (lojaId != null) {
                         carregarNomeLoja(lojaId);
-                        carregarNotaMensal(lojaId);
+                        //carregarNotaMensal(lojaId);
                     }
                 });
     }
@@ -124,7 +145,7 @@ public class ChecklistActivity extends AppCompatActivity {
                 });
     }
 
-    private void carregarNotaMensal(String lojaId) {
+    /*private void carregarNotaMensal(String lojaId) {
         int yyyymm = getYYYYMM();
         String docId = lojaId + "_" + yyyymm;
 
@@ -138,10 +159,50 @@ public class ChecklistActivity extends AppCompatActivity {
 
                     txtNotaMensal.setText("Pontos mês: " + (int) pontosTotal);
                 });
-    }
+    }*/
 
     private int getYYYYMM() {
         Calendar cal = Calendar.getInstance();
         return cal.get(Calendar.YEAR) * 100 + (cal.get(Calendar.MONTH) + 1);
+    }
+
+    private void calcularPercentualUsuario(String uid) {
+
+        db.collection("tarefas")
+                .whereEqualTo("userId", uid)
+                .get()
+                .addOnSuccessListener(query -> {
+
+                    int totalTarefas = query.size();
+
+                    if (totalTarefas == 0) {
+                        txtNotaMensal.setText("Nota Mensal: 0%");
+                        return;
+                    }
+
+                    double percentualTotal = 0;
+
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+
+                        Long notaLong = doc.getLong("nota");
+
+                        int nota = notaLong != null
+                                ? notaLong.intValue()
+                                : 0;
+
+                        double percentualParcial = 100.0 / totalTarefas;
+
+                        double valorPorNota = percentualParcial / 5.0;
+
+                        percentualTotal += valorPorNota * nota;
+                    }
+
+                    percentualTotal =
+                            Math.round(percentualTotal * 100.0) / 100.0;
+
+                    txtNotaMensal.setText(
+                            "Nota Mensal: " + percentualTotal + "%"
+                    );
+                });
     }
 }
