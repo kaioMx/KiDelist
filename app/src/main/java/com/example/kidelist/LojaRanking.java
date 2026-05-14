@@ -18,6 +18,10 @@ public class LojaRanking {
         return posicao;
     }
 
+    public void setPosicao(int posicao){
+        this.posicao = posicao;
+    }
+
     public String getNomeLoja() {
         return nomeLoja;
     }

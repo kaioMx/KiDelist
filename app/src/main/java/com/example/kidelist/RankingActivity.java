@@ -9,18 +9,27 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RankingActivity extends AppCompatActivity {
 
     private Button btnSemanal, btnMensal;
     private RecyclerView rvRankingLojas;
 
+    private FirebaseFirestore db;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ranking);
+
+        db = FirebaseFirestore.getInstance();
 
         ImageView btnVoltar = findViewById(R.id.btnVoltar);
         btnSemanal = findViewById(R.id.btnSemanal);
@@ -35,16 +44,17 @@ public class RankingActivity extends AppCompatActivity {
 
         rvRankingLojas.setLayoutManager(new LinearLayoutManager(this));
 
-        carregarRankingSemanal();
+        ativarFiltroSemanal();
+        carregarRankingFirebase();
 
         btnSemanal.setOnClickListener(v -> {
             ativarFiltroSemanal();
-            carregarRankingSemanal();
+            carregarRankingFirebase();
         });
 
         btnMensal.setOnClickListener(v -> {
             ativarFiltroMensal();
-            carregarRankingMensal();
+            carregarRankingFirebase();
         });
 
         FooterNavigation.setup(this, FooterNavigation.TELA_RANKING);
@@ -66,29 +76,123 @@ public class RankingActivity extends AppCompatActivity {
         btnSemanal.setTextColor(getColor(R.color.kidelist_primary));
     }
 
-    private void carregarRankingSemanal() {
-        List<LojaRanking> lista = new ArrayList<>();
+    private void carregarRankingFirebase() {
 
-        lista.add(new LojaRanking(4, "Loja Bia", "Kaio", 870));
-        lista.add(new LojaRanking(5, "Loja Elza", "Marcos", 850));
-        lista.add(new LojaRanking(6, "Loja Recreio", "Fernanda", 820));
-        lista.add(new LojaRanking(7, "Loja Kidelicia", "Juliana", 790));
-        lista.add(new LojaRanking(8, "Loja Monte Carmelo", "Carlos", 760));
+        Map<String, LojaRankingTemp> rankingLojas = new HashMap<>();
 
-        LojaRankingAdapter adapter = new LojaRankingAdapter(lista);
-        rvRankingLojas.setAdapter(adapter);
+        db.collection("usuarios")
+                .get()
+                .addOnSuccessListener(usuariosSnapshot -> {
+
+                    Map<String, String> usuarioLojaId = new HashMap<>();
+                    Map<String, String> usuarioLojaNome = new HashMap<>();
+                    Map<String, String> usuarioNome = new HashMap<>();
+
+                    for (DocumentSnapshot userDoc : usuariosSnapshot.getDocuments()) {
+
+                        String userId = userDoc.getId();
+
+                        String nome = userDoc.getString("nome");
+                        String lojaId = userDoc.getString("lojaId");
+
+                        if (lojaId != null) {
+
+                            usuarioLojaId.put(userId, lojaId);
+
+                            usuarioLojaNome.put(userId, lojaId);
+
+                            usuarioNome.put(
+                                    userId,
+                                    nome != null ? nome : "Usuário"
+                            );
+                        }
+                    }
+
+                    db.collection("tarefas")
+                            .get()
+                            .addOnSuccessListener(tarefasSnapshot -> {
+
+                                for (DocumentSnapshot tarefaDoc : tarefasSnapshot.getDocuments()) {
+
+                                    String userId = tarefaDoc.getString("userId");
+
+                                    Long percentualLong = tarefaDoc.getLong("percentual");
+
+                                    int percentual = percentualLong != null
+                                            ? percentualLong.intValue()
+                                            : 0;
+
+                                    if (userId == null || !usuarioLojaId.containsKey(userId)) {
+                                        continue;
+                                    }
+
+                                    String lojaId = usuarioLojaId.get(userId);
+
+                                    String lojaNome = usuarioLojaNome.get(userId);
+
+                                    String nomeUsuario = usuarioNome.get(userId);
+
+                                    LojaRankingTemp temp = rankingLojas.get(lojaId);
+
+                                    if (temp == null) {
+
+                                        temp = new LojaRankingTemp(
+                                                lojaNome,
+                                                nomeUsuario
+                                        );
+
+                                        rankingLojas.put(lojaId, temp);
+                                    }
+
+                                    temp.somaPercentual += percentual;
+                                    temp.quantidadeTarefas++;
+                                }
+
+                                List<LojaRanking> listaFinal = new ArrayList<>();
+
+                                for (LojaRankingTemp temp : rankingLojas.values()) {
+
+                                    int media = temp.quantidadeTarefas > 0
+                                            ? temp.somaPercentual / temp.quantidadeTarefas
+                                            : 0;
+
+                                    listaFinal.add(
+                                            new LojaRanking(
+                                                    0,
+                                                    temp.nomeLoja,
+                                                    temp.nomeResponsavel,
+                                                    media
+                                            )
+                                    );
+                                }
+
+                                listaFinal.sort(
+                                        (a, b) -> b.getPontos() - a.getPontos()
+                                );
+
+                                for (int i = 0; i < listaFinal.size(); i++) {
+                                    listaFinal.get(i).setPosicao(i + 1);
+                                }
+
+                                LojaRankingAdapter adapter =
+                                        new LojaRankingAdapter(listaFinal);
+
+                                rvRankingLojas.setAdapter(adapter);
+                            });
+                });
     }
 
-    private void carregarRankingMensal() {
-        List<LojaRanking> lista = new ArrayList<>();
+    private static class LojaRankingTemp {
 
-        lista.add(new LojaRanking(4, "Loja Coromandel", "Kaio", 3420));
-        lista.add(new LojaRanking(5, "Loja Patos", "Marcos", 3350));
-        lista.add(new LojaRanking(6, "Loja Uberlândia", "Fernanda", 3210));
-        lista.add(new LojaRanking(7, "Loja Araguari", "Juliana", 3090));
-        lista.add(new LojaRanking(8, "Loja Monte Carmelo", "Carlos", 2980));
+        String nomeLoja;
+        String nomeResponsavel;
 
-        LojaRankingAdapter adapter = new LojaRankingAdapter(lista);
-        rvRankingLojas.setAdapter(adapter);
+        int somaPercentual = 0;
+        int quantidadeTarefas = 0;
+
+        LojaRankingTemp(String nomeLoja, String nomeResponsavel) {
+            this.nomeLoja = nomeLoja;
+            this.nomeResponsavel = nomeResponsavel;
+        }
     }
 }

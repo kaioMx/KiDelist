@@ -10,6 +10,15 @@ public class TarefaChecklist {
     private String id;
     private String fotoLocal;
     private String userId;
+    private String responsavelNome;
+
+    public String getResponsavelNome() {
+        return responsavelNome;
+    }
+
+    public void setResponsavelNome(String responsavelNome) {
+        this.responsavelNome = responsavelNome;
+    }
 
     public String getUserId() {
         return userId;

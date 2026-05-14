@@ -109,6 +109,22 @@
                     android:inputType="textMultiLine"
                     android:padding="14dp" />
 
+                <!-- USUÁRIO RESPONSÁVEL -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Atribuir para"
+                    android:textColor="#33428C"
+                    android:textStyle="bold" />
+
+                <Spinner
+                    android:id="@+id/spUsuarios"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/bg_input_tarefa" />
+
                 <!-- DATA -->
                 <TextView
                     android:layout_width="wrap_content"

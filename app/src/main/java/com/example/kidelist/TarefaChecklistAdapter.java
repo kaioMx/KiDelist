@@ -14,6 +14,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -57,6 +59,9 @@ public class TarefaChecklistAdapter extends RecyclerView.Adapter<TarefaChecklist
             intent.putExtra("descricao", item.getDescricao());
             intent.putExtra("nota", item.getNota());
             intent.putExtra("feito", item.isFeito());
+            intent.putExtra("data", item.getData());
+            intent.putExtra("hora", item.getHora());
+            intent.putExtra("responsavelNome", item.getResponsavelNome());
 
             v.getContext().startActivity(intent);
         });
@@ -142,48 +147,36 @@ public class TarefaChecklistAdapter extends RecyclerView.Adapter<TarefaChecklist
 
         if (position == RecyclerView.NO_POSITION) return;
 
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
         TarefaChecklist item = itens.get(position);
 
+        item.setNota(nota);
+        item.setFeito(true);
+
+        Map<String, Object> dados = new HashMap<>();
+        dados.put("nota", nota);
+        dados.put("concluida", true);
+        dados.put("userId", user.getUid());
+        dados.put("tarefaId", item.getId());
+
         db.collection("tarefas")
-                .whereEqualTo("userId", item.getUserId())
-                .get()
-                .addOnSuccessListener(query -> {
+                .document(item.getId())
+                .collection("notas")
+                .document(user.getUid())
+                .set(dados)
+                .addOnSuccessListener(unused -> {
+                    System.out.println("SALVOU NOTA: " + nota);
 
-                    int totalTarefas = query.size();
+                    notifyItemChanged(position);
 
-                    if (totalTarefas == 0) return;
-
-                    double percentualParcial = 100.0 / totalTarefas;
-
-                    double valorPorNota = percentualParcial / 5.0;
-
-                    double percentualFinal = valorPorNota * nota;
-
-                    percentualFinal = Math.round(percentualFinal * 100.0) / 100.0;
-
-                    item.setNota(nota);
-                    item.setFeito(true);
-
-                    Map<String, Object> dados = new HashMap<>();
-
-                    dados.put("nota", nota);
-                    dados.put("concluida", true);
-                    dados.put("percentual", percentualFinal);
-
-                    db.collection("tarefas")
-                            .document(item.getId())
-                            .update(dados)
-                            .addOnSuccessListener(unused -> {
-                                System.out.println("SALVOU!");
-                                notifyDataSetChanged();
-
-                                if (listener != null) {
-                                    listener.onNotaAtualizada();
-                                }
-                            })
-                            .addOnFailureListener(e -> {
-                                System.out.println("ERRO AO SALVAR: " + e.getMessage());
-                            });
+                    if (listener != null) {
+                        listener.onNotaAtualizada();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    System.out.println("ERRO AO SALVAR: " + e.getMessage());
                 });
     }
 }

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -19,8 +20,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -40,6 +43,9 @@ public class CriarTarefaActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth auth;
 
+    private Spinner spUsuarios;
+    private Map<String, String> mapaUsuarios = new HashMap<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +56,7 @@ public class CriarTarefaActivity extends AppCompatActivity {
 
         inicializarViews();
         configurarSpinnerRepeticao();
+        carregarUsuarios();
         configurarEventos();
         FooterNavigation.setup(this, FooterNavigation.TELA_TAREFAS);
     }
@@ -63,6 +70,7 @@ public class CriarTarefaActivity extends AppCompatActivity {
         btnSalvarTarefa = findViewById(R.id.btnSalvarTarefa);
         cbRepetir = findViewById(R.id.cbRepetir);
         btnVoltar = findViewById(R.id.btnVoltar);
+        spUsuarios = findViewById(R.id.spUsuarios);
     }
 
     private void configurarSpinnerRepeticao() {
@@ -154,9 +162,16 @@ public class CriarTarefaActivity extends AppCompatActivity {
         boolean repetir = cbRepetir.isChecked();
         String tipoRepeticao = repetir ? spTipoRepeticao.getSelectedItem().toString() : "Não repetir";
 
+        String usuarioSelecionado = spUsuarios.getSelectedItem().toString();
+
         if (titulo.isEmpty()) {
             etTitulo.setError("Informe o título da tarefa");
             etTitulo.requestFocus();
+            return;
+        }
+
+        if (usuarioSelecionado.equals("Selecione um usuário")) {
+            Toast.makeText(this, "Selecione o responsável", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -171,10 +186,13 @@ public class CriarTarefaActivity extends AppCompatActivity {
         }
 
         FirebaseUser usuario = auth.getCurrentUser();
+
         if (usuario == null) {
             Toast.makeText(this, "Usuário não autenticado", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        String usuarioResponsavelId = mapaUsuarios.get(usuarioSelecionado);
 
         btnSalvarTarefa.setEnabled(false);
 
@@ -186,7 +204,15 @@ public class CriarTarefaActivity extends AppCompatActivity {
         tarefa.put("repetir", repetir);
         tarefa.put("tipoRepeticao", tipoRepeticao);
         tarefa.put("concluida", false);
-        tarefa.put("userId", usuario.getUid());
+
+        // quem criou
+        tarefa.put("criadoPor", usuario.getUid());
+
+        // pra quem foi atribuída
+        tarefa.put("userId", usuarioResponsavelId);
+
+        tarefa.put("responsavelNome", usuarioSelecionado);
+
         tarefa.put("createdAt", Timestamp.now());
 
         db.collection("tarefas")
@@ -200,12 +226,10 @@ public class CriarTarefaActivity extends AppCompatActivity {
 
                     limparCampos();
                     btnSalvarTarefa.setEnabled(true);
-
-                    // opcional: voltar para checklist
-                    // finish();
                 })
                 .addOnFailureListener(e -> {
                     btnSalvarTarefa.setEnabled(true);
+
                     Toast.makeText(
                             CriarTarefaActivity.this,
                             "Erro ao salvar: " + e.getMessage(),
@@ -224,5 +248,43 @@ public class CriarTarefaActivity extends AppCompatActivity {
 
         dataSelecionada = "";
         horaSelecionada = "";
+    }
+
+    private void carregarUsuarios() {
+        db.collection("usuarios")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    ArrayList<String> nomesUsuarios = new ArrayList<>();
+                    mapaUsuarios.clear();
+
+                    nomesUsuarios.add("Selecione um usuário");
+
+                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                        String nome = doc.getString("nome");
+
+                        if (nome != null) {
+                            nomesUsuarios.add(nome);
+                            mapaUsuarios.put(nome, doc.getId());
+                        }
+                    }
+
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                            this,
+                            android.R.layout.simple_spinner_item,
+                            nomesUsuarios
+                    );
+
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spUsuarios.setAdapter(adapter);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(
+                            this,
+                            "Erro ao carregar usuários: " + e.getMessage(),
+                            Toast.LENGTH_LONG
+                    ).show();
+
+                    Log.e("CRIAR_TAREFA", "Erro ao carregar usuários", e);
+                });
     }
 }
