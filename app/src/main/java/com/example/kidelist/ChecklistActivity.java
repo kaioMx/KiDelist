@@ -1,8 +1,14 @@
+
 package com.example.kidelist;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,389 +21,800 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 
 public class ChecklistActivity extends AppCompatActivity {
 
-    private final List<TarefaChecklist> tarefas = new ArrayList<>();
+    private final List<TarefaChecklist> tarefas =
+            new ArrayList<>();
+
+    private final List<Usuario> usuarios =
+            new ArrayList<>();
+
+    private final List<String> nomesFuncionarios =
+            new ArrayList<>();
+
+    private final List<String> idsFuncionarios =
+            new ArrayList<>();
+
     private TarefaChecklistAdapter adapter;
 
-    private TextView txtTitulo, txtGerente, txtNotaMensal;
+    private TextView txtTitulo;
+    private TextView txtGerente;
+    private TextView txtNotaMensal;
+
+    private LinearLayout layoutFiltroFuncionario;
+
+    private Spinner spinnerFuncionarios;
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
 
+    private String funcionarioSelecionadoId = "TODOS";
+    private String uidLogado;
+
+    private boolean usuarioGerenteLogado = false;
+    private boolean primeiraRetomada = true;
+
+    // Impede que consultas antigas sobrescrevam filtros recentes.
+    private int tokenCarregamento = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_checklist);
 
-        FooterNavigation.setup(this, FooterNavigation.TELA_TAREFAS);
+        FooterNavigation.setup(
+                this,
+                FooterNavigation.TELA_TAREFAS
+        );
 
-        RecyclerView rv = findViewById(R.id.rvTarefas);
-        MaterialCardView cardNovaTarefa = findViewById(R.id.cardNovaTarefa);
+        RecyclerView rv =
+                findViewById(R.id.rvTarefas);
 
-        txtTitulo = findViewById(R.id.txtTitulo);
-        txtGerente = findViewById(R.id.txtGerente);
-        txtNotaMensal = findViewById(R.id.txtNotaMensal);
+        MaterialCardView cardNovaTarefa =
+                findViewById(R.id.cardNovaTarefa);
+
+        txtTitulo =
+                findViewById(R.id.txtTitulo);
+
+        txtGerente =
+                findViewById(R.id.txtGerente);
+
+        txtNotaMensal =
+                findViewById(R.id.txtNotaMensal);
+
+        layoutFiltroFuncionario =
+                findViewById(R.id.layoutFiltroFuncionario);
+
+        spinnerFuncionarios =
+                findViewById(R.id.spinnerFuncionarios);
 
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
         FirebaseUser user = auth.getCurrentUser();
+
         if (user == null) {
             finish();
             return;
         }
 
+        uidLogado = user.getUid();
+
+        txtNotaMensal.setVisibility(View.GONE);
+        layoutFiltroFuncionario.setVisibility(View.GONE);
         cardNovaTarefa.setVisibility(View.GONE);
 
-        db.collection("usuarios").document(user.getUid()).get()
+        /*
+         * Adapter das tarefas.
+         */
+        adapter = new TarefaChecklistAdapter(
+                this,
+                tarefas,
+                () -> {
+
+                    if (usuarioGerenteLogado) {
+                        carregarNotaGeral();
+                    }
+                }
+        );
+
+        rv.setLayoutManager(
+                new LinearLayoutManager(this)
+        );
+
+        rv.setAdapter(adapter);
+
+        /*
+         * Verifica o tipo do usuário logado.
+         */
+        db.collection("usuarios")
+                .document(uidLogado)
+                .get()
                 .addOnSuccessListener(doc -> {
+
+                    if (!doc.exists()) {
+                        Toast.makeText(
+                                this,
+                                "Usuário não encontrado.",
+                                Toast.LENGTH_SHORT
+                        ).show();
+
+                        finish();
+                        return;
+                    }
+
                     String tipo = doc.getString("tipo");
 
-                    if ("Gerente".equals(tipo)) {
+                    usuarioGerenteLogado =
+                            "Gerente".equals(tipo);
+
+                    adapter.setUsuarioGerente(
+                            usuarioGerenteLogado
+                    );
+
+                    if (usuarioGerenteLogado) {
+
+                        /*
+                         * GERENTE:
+                         * pode criar tarefas, filtrar funcionários
+                         * e avaliar os funcionários.
+                         */
                         cardNovaTarefa.setVisibility(View.VISIBLE);
+
+                        layoutFiltroFuncionario.setVisibility(
+                                View.VISIBLE
+                        );
+
+                        txtNotaMensal.setVisibility(
+                                View.VISIBLE
+                        );
+
+                        carregarFuncionarios();
+
+                        carregarTodasTarefas();
+
+                        carregarNotaGeral();
+
                     } else {
+
+                        /*
+                         * FUNCIONÁRIO:
+                         * visualiza somente as próprias tarefas.
+                         */
                         cardNovaTarefa.setVisibility(View.GONE);
+
+                        layoutFiltroFuncionario.setVisibility(
+                                View.GONE
+                        );
+
+                        txtNotaMensal.setVisibility(
+                                View.GONE
+                        );
+
+                        carregarTarefasUsuario(uidLogado);
                     }
                 })
                 .addOnFailureListener(e -> {
+
                     cardNovaTarefa.setVisibility(View.GONE);
+
+                    layoutFiltroFuncionario.setVisibility(
+                            View.GONE
+                    );
+
+                    txtNotaMensal.setVisibility(View.GONE);
+
+                    Toast.makeText(
+                            this,
+                            "Erro ao verificar usuário: "
+                                    + e.getMessage(),
+                            Toast.LENGTH_SHORT
+                    ).show();
                 });
 
-        carregarHeader(user.getUid());
+        carregarHeader(uidLogado);
 
-        adapter = new TarefaChecklistAdapter(tarefas, () -> {
-            FirebaseUser currentUser = auth.getCurrentUser();
-
-            if (currentUser != null) {
-                //carregarTarefas(currentUser.getUid());
-                calcularPercentualUsuario(currentUser.getUid());
-            }
-        });
-
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        rv.setAdapter(adapter);
-
+        /*
+         * Botão Nova Tarefa.
+         * Somente o gerente consegue visualizar esse botão.
+         */
         cardNovaTarefa.setOnClickListener(v -> {
-            Intent intent = new Intent(ChecklistActivity.this, CriarTarefaActivity.class);
+
+            if (!usuarioGerenteLogado) {
+                return;
+            }
+
+            Intent intent = new Intent(
+                    ChecklistActivity.this,
+                    CriarTarefaActivity.class
+            );
+
             startActivity(intent);
         });
 
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        /*
+         * Botão voltar.
+         */
+        findViewById(R.id.btnBack).setOnClickListener(
+                v -> finish()
+        );
     }
 
+    /*
+     * Atualiza a lista quando retorna de outra tela.
+     * A primeira abertura não gera uma segunda consulta.
+     */
     @Override
-    protected void onStart() {
-        super.onStart();
+    protected void onResume() {
+        super.onResume();
 
-        FirebaseUser user = auth.getCurrentUser();
-        if (user != null) {
-            carregarTarefas(user.getUid());
-            calcularPercentualUsuario(user.getUid());
+        if (primeiraRetomada) {
+            primeiraRetomada = false;
+            return;
+        }
+
+        if (uidLogado == null || adapter == null) {
+            return;
+        }
+
+        if (usuarioGerenteLogado) {
+
+            if ("TODOS".equals(funcionarioSelecionadoId)) {
+
+                carregarTodasTarefas();
+
+            } else {
+
+                carregarTarefasFuncionario(
+                        funcionarioSelecionadoId
+                );
+            }
+
+            carregarNotaGeral();
+
+        } else {
+
+            carregarTarefasUsuario(uidLogado);
         }
     }
 
-    private void carregarTarefas(String uid) {
-        db.collection("usuarios")
-                .document(uid)
-                .get()
-                .addOnSuccessListener(userDoc -> {
-                    String tipo = userDoc.getString("tipo");
+    /*
+     * Carrega todas as tarefas.
+     */
+    private void carregarTodasTarefas() {
 
-                    if ("Gerente".equals(tipo)) {
-                        carregarTodasTarefas();
-                    } else {
-                        carregarTarefasUsuario(uid);
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao verificar usuário", Toast.LENGTH_SHORT).show()
-                );
+        carregarTarefasComNotas(
+                db.collection("tarefas")
+        );
     }
 
-    private void carregarTodasTarefas() {
-        db.collection("tarefas")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
+    /*
+     * Carrega tarefas de um funcionário específico.
+     */
+    private void carregarTarefasFuncionario(
+            String funcionarioId
+    ) {
+
+        carregarTarefasComNotas(
+                db.collection("tarefas")
+                        .whereEqualTo("userId", funcionarioId)
+        );
+    }
+
+    /*
+     * Carrega somente as tarefas do funcionário logado.
+     */
+    private void carregarTarefasUsuario(String uid) {
+
+        carregarTarefasComNotas(
+                db.collection("tarefas")
+                        .whereEqualTo("userId", uid)
+        );
+    }
+
+    /*
+     * Carrega tarefas e seus dados de avaliação/conclusão.
+     *
+     * O documento de avaliação continua no caminho:
+     *
+     * tarefas/{tarefaId}/notas/{funcionarioId}
+     *
+     * A nota e a conclusão são recuperadas separadamente
+     * dos dados principais da tarefa.
+     */
+    private void carregarTarefasComNotas(Query consulta) {
+
+        final int tokenAtual = ++tokenCarregamento;
+
+        consulta.get()
+                .addOnSuccessListener(resultado -> {
+
+                    if (tokenAtual != tokenCarregamento) {
+                        return;
+                    }
+
                     tarefas.clear();
 
-                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                    for (DocumentSnapshot doc :
+                            resultado.getDocuments()) {
 
-                        TarefaChecklist tarefa = new TarefaChecklist();
-
-                        tarefa.setId(doc.getId());
-
-                        tarefa.setNome(doc.getString("titulo") != null
-                                ? doc.getString("titulo")
-                                : "Sem título");
-
-                        tarefa.setDescricao(doc.getString("descricao") != null
-                                ? doc.getString("descricao")
-                                : "");
-
-                        tarefa.setFotoLocal(doc.getString("fotoUrl") != null
-                                ? doc.getString("fotoUrl")
-                                : "");
-
-                        tarefa.setData(doc.getString("data") != null
-                                ? doc.getString("data")
-                                : "");
-
-                        tarefa.setHora(doc.getString("hora") != null
-                                ? doc.getString("hora")
-                                : "");
-
-                        tarefa.setUserId(doc.getString("userId"));
-
-                        tarefa.setResponsavelNome(
-                                doc.getString("responsavelNome") != null
-                                        ? doc.getString("responsavelNome")
-                                        : ""
-                        );
-
-                        tarefa.setNota(0);
-                        tarefa.setFeito(false);
+                        TarefaChecklist tarefa =
+                                criarTarefaFromDocument(doc);
 
                         tarefas.add(tarefa);
                     }
 
                     adapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao carregar todas as tarefas", Toast.LENGTH_SHORT).show()
-                );
-    }
 
-    private void carregarTarefasUsuario(String uid) {
-        db.collection("tarefas")
-                .whereEqualTo("userId", uid)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    tarefas.clear();
+                    Log.d(
+                            "TAREFAS",
+                            "Tarefas encontradas: " + tarefas.size()
+                    );
 
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        adapter.notifyDataSetChanged();
+                    if (tarefas.isEmpty()) {
                         return;
                     }
 
-                    final int total = queryDocumentSnapshots.size();
-                    final int[] carregadas = {0};
+                    for (TarefaChecklist tarefa :
+                            new ArrayList<>(tarefas)) {
 
-                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                        TarefaChecklist tarefa = new TarefaChecklist();
+                        String funcionarioId =
+                                tarefa.getUserId();
 
-                        tarefa.setId(doc.getId());
-                        tarefa.setNome(doc.getString("titulo") != null ? doc.getString("titulo") : "Sem título");
-                        tarefa.setDescricao(doc.getString("descricao") != null ? doc.getString("descricao") : "");
-                        tarefa.setFotoLocal(doc.getString("fotoUrl") != null ? doc.getString("fotoUrl") : "");
-                        tarefa.setData(doc.getString("data") != null ? doc.getString("data") : "");
-                        tarefa.setHora(doc.getString("hora") != null ? doc.getString("hora") : "");
-                        tarefa.setUserId(uid);
-                        tarefa.setNota(0);
-                        tarefa.setFeito(false);
+                        if (funcionarioId == null
+                                || funcionarioId.isEmpty()) {
+                            continue;
+                        }
 
                         db.collection("tarefas")
-                                .document(doc.getId())
+                                .document(tarefa.getId())
                                 .collection("notas")
-                                .document(uid)
-                                .get()
-                                .addOnSuccessListener(notaDoc -> {
-                                    if (notaDoc.exists()) {
-                                        Long notaLong = notaDoc.getLong("nota");
-                                        Boolean concluida = notaDoc.getBoolean("concluida");
-
-                                        tarefa.setNota(notaLong != null ? notaLong.intValue() : 0);
-                                        tarefa.setFeito(concluida != null && concluida);
-                                    }
-
-                                    tarefas.add(tarefa);
-                                    carregadas[0]++;
-
-                                    if (carregadas[0] == total) {
-                                        adapter.notifyDataSetChanged();
-                                    }
-                                });
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao carregar tarefas", Toast.LENGTH_SHORT).show()
-                );
-    }
-
-    /*private void carregarTarefas(String uid) {
-        db.collection("tarefas")
-                .whereEqualTo("userId", uid)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    tarefas.clear();
-
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        adapter.notifyDataSetChanged();
-                        return;
-                    }
-
-                    final int total = queryDocumentSnapshots.size();
-                    final int[] carregadas = {0};
-
-                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-
-                        String data = doc.getString("data");
-                        String hora = doc.getString("hora");
-
-                        TarefaChecklist tarefa = new TarefaChecklist();
-
-                        tarefa.setId(doc.getId());
-                        tarefa.setNome(doc.getString("titulo") != null ? doc.getString("titulo") : "Sem título");
-                        tarefa.setDescricao(doc.getString("descricao") != null ? doc.getString("descricao") : "");
-                        tarefa.setFotoLocal(doc.getString("fotoUrl") != null ? doc.getString("fotoUrl") : "");
-                        tarefa.setData(data != null ? data : "");
-                        tarefa.setHora(hora != null ? hora : "");
-                        tarefa.setUserId(uid);
-                        tarefa.setNota(0);
-                        tarefa.setFeito(false);
-
-                        db.collection("tarefas")
-                                .document(doc.getId())
-                                .collection("notas")
-                                .document(uid)
+                                .document(funcionarioId)
                                 .get()
                                 .addOnSuccessListener(notaDoc -> {
 
-                                    if (notaDoc.exists()) {
-                                        Long notaLong = notaDoc.getLong("nota");
-                                        Boolean concluida = notaDoc.getBoolean("concluida");
-
-                                        tarefa.setNota(notaLong != null ? notaLong.intValue() : 0);
-                                        tarefa.setFeito(concluida != null && concluida);
+                                    if (tokenAtual != tokenCarregamento) {
+                                        return;
                                     }
 
-                                    tarefas.add(tarefa);
-                                    carregadas[0]++;
+                                    if (notaDoc.exists()) {
 
-                                    if (carregadas[0] == total) {
+                                        Long nota =
+                                                notaDoc.getLong("nota");
+
+                                        Boolean concluida =
+                                                notaDoc.getBoolean(
+                                                        "concluida"
+                                                );
+
+                                        tarefa.setNota(
+                                                nota != null
+                                                        ? nota.intValue()
+                                                        : 0
+                                        );
+
+                                        tarefa.setFeito(
+                                                Boolean.TRUE.equals(
+                                                        concluida
+                                                )
+                                        );
+
                                         adapter.notifyDataSetChanged();
                                     }
                                 })
-                                .addOnFailureListener(e -> {
-                                    tarefas.add(tarefa);
-                                    carregadas[0]++;
-
-                                    if (carregadas[0] == total) {
-                                        adapter.notifyDataSetChanged();
-                                    }
-                                });
+                                .addOnFailureListener(e ->
+                                        Log.e(
+                                                "AVALIACAO",
+                                                "Erro ao carregar avaliação: "
+                                                        + e.getMessage()
+                                        )
+                                );
                     }
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Erro ao carregar tarefas", Toast.LENGTH_SHORT).show()
-                );
-    }*/
+                .addOnFailureListener(e -> {
 
+                    if (tokenAtual != tokenCarregamento) {
+                        return;
+                    }
+
+                    Toast.makeText(
+                            this,
+                            "Erro ao carregar tarefas: "
+                                    + e.getMessage(),
+                            Toast.LENGTH_SHORT
+                    ).show();
+                });
+    }
+
+    /*
+     * Converte um documento do Firestore em TarefaChecklist.
+     */
+    private TarefaChecklist criarTarefaFromDocument(
+            DocumentSnapshot doc
+    ) {
+
+        TarefaChecklist tarefa =
+                new TarefaChecklist();
+
+        tarefa.setId(doc.getId());
+
+        tarefa.setNome(
+                doc.getString("titulo") != null
+                        ? doc.getString("titulo")
+                        : "Sem título"
+        );
+
+        tarefa.setDescricao(
+                doc.getString("descricao") != null
+                        ? doc.getString("descricao")
+                        : ""
+        );
+
+        tarefa.setFotoLocal(
+                doc.getString("fotoUrl") != null
+                        ? doc.getString("fotoUrl")
+                        : ""
+        );
+
+        tarefa.setData(
+                doc.getString("data") != null
+                        ? doc.getString("data")
+                        : ""
+        );
+
+        tarefa.setHora(
+                doc.getString("hora") != null
+                        ? doc.getString("hora")
+                        : ""
+        );
+
+        tarefa.setUserId(
+                doc.getString("userId")
+        );
+
+        tarefa.setResponsavelNome(
+                doc.getString("responsavelNome") != null
+                        ? doc.getString("responsavelNome")
+                        : ""
+        );
+
+        tarefa.setNota(0);
+        tarefa.setFeito(false);
+
+        return tarefa;
+    }
+
+    /*
+     * Carrega todos os funcionários no Spinner.
+     */
+    private void carregarFuncionarios() {
+
+        usuarios.clear();
+        nomesFuncionarios.clear();
+        idsFuncionarios.clear();
+
+        nomesFuncionarios.add(
+                "Todos os funcionários"
+        );
+
+        idsFuncionarios.add("TODOS");
+
+        db.collection("usuarios")
+                .whereEqualTo("tipo", "Funcionario")
+                .get()
+                .addOnSuccessListener(funcionarios -> {
+
+                    Log.d(
+                            "FUNCIONARIOS",
+                            "Total de funcionários encontrados: "
+                                    + funcionarios.size()
+                    );
+
+                    for (DocumentSnapshot funcionario :
+                            funcionarios.getDocuments()) {
+
+                        String funcionarioId =
+                                funcionario.getId();
+
+                        String nomeFuncionario =
+                                funcionario.getString("nome");
+
+                        if (nomeFuncionario == null) {
+                            nomeFuncionario = "Sem nome";
+                        }
+
+                        nomesFuncionarios.add(
+                                nomeFuncionario
+                        );
+
+                        idsFuncionarios.add(
+                                funcionarioId
+                        );
+
+                        Usuario usuario =
+                                new Usuario();
+
+                        usuario.setId(funcionarioId);
+                        usuario.setNome(nomeFuncionario);
+
+                        usuarios.add(usuario);
+                    }
+
+                    ArrayAdapter<String> spinnerAdapter =
+                            new ArrayAdapter<>(
+                                    ChecklistActivity.this,
+                                    android.R.layout.simple_spinner_item,
+                                    nomesFuncionarios
+                            );
+
+                    spinnerAdapter.setDropDownViewResource(
+                            android.R.layout.simple_spinner_dropdown_item
+                    );
+
+                    spinnerFuncionarios.setAdapter(
+                            spinnerAdapter
+                    );
+
+                    spinnerFuncionarios.setOnItemSelectedListener(
+                            new AdapterView.OnItemSelectedListener() {
+
+                                @Override
+                                public void onItemSelected(
+                                        AdapterView<?> parent,
+                                        View view,
+                                        int position,
+                                        long id
+                                ) {
+
+                                    if (position >=
+                                            idsFuncionarios.size()) {
+                                        return;
+                                    }
+
+                                    funcionarioSelecionadoId =
+                                            idsFuncionarios.get(position);
+
+                                    Log.d(
+                                            "FILTRO",
+                                            "Funcionário selecionado: "
+                                                    + nomesFuncionarios.get(
+                                                    position
+                                            )
+                                    );
+
+                                    if ("TODOS".equals(
+                                            funcionarioSelecionadoId
+                                    )) {
+
+                                        carregarTodasTarefas();
+
+                                    } else {
+
+                                        carregarTarefasFuncionario(
+                                                funcionarioSelecionadoId
+                                        );
+                                    }
+                                }
+
+                                @Override
+                                public void onNothingSelected(
+                                        AdapterView<?> parent
+                                ) {
+                                }
+                            }
+                    );
+
+                    spinnerFuncionarios.setSelection(0);
+
+                    // Garante o carregamento inicial de todas as tarefas.
+                    carregarTodasTarefas();
+                })
+                .addOnFailureListener(e -> {
+
+                    Log.e(
+                            "FUNCIONARIOS",
+                            "Erro ao buscar funcionários: "
+                                    + e.getMessage()
+                    );
+
+                    Toast.makeText(
+                            ChecklistActivity.this,
+                            "Erro ao carregar funcionários",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                });
+    }
+
+    /*
+     * Carrega o cabeçalho.
+     */
     private void carregarHeader(String uid) {
-        db.collection("usuarios").document(uid).get()
+
+        db.collection("usuarios")
+                .document(uid)
+                .get()
                 .addOnSuccessListener(userDoc -> {
-                    if (!userDoc.exists()) return;
 
-                    String nome = userDoc.getString("nome");
-                    String lojaId = userDoc.getString("lojaId");
+                    if (!userDoc.exists()) {
+                        return;
+                    }
 
-                    if (nome != null) txtGerente.setText(nome);
+                    String nome =
+                            userDoc.getString("nome");
+
+                    if (nome != null) {
+                        txtGerente.setText(nome);
+                    }
+
+                    String lojaId =
+                            userDoc.getString("lojaId");
 
                     if (lojaId != null) {
                         carregarNomeLoja(lojaId);
-                        //carregarNotaMensal(lojaId);
                     }
                 });
     }
 
     private void carregarNomeLoja(String lojaId) {
-        db.collection("lojas").document(lojaId).get()
+
+        db.collection("lojas")
+                .document(lojaId)
+                .get()
                 .addOnSuccessListener(lojaDoc -> {
-                    String nomeLoja = lojaDoc.getString("nome");
-                    if (nomeLoja == null) nomeLoja = "Loja";
 
-                    txtTitulo.setText("CheckList - " + nomeLoja);
-                });
-    }
+                    String nomeLoja =
+                            lojaDoc.getString("nome");
 
-    /*private void carregarNotaMensal(String lojaId) {
-        int yyyymm = getYYYYMM();
-        String docId = lojaId + "_" + yyyymm;
-
-        db.collection("rankingMensal").document(docId).get()
-                .addOnSuccessListener(rankDoc -> {
-                    double pontosTotal = 0;
-                    if (rankDoc.exists() && rankDoc.get("pontosTotal") != null) {
-                        Number n = (Number) rankDoc.get("pontosTotal");
-                        pontosTotal = n.doubleValue();
+                    if (nomeLoja == null) {
+                        nomeLoja = "Loja";
                     }
 
-                    txtNotaMensal.setText("Pontos mês: " + (int) pontosTotal);
+                    txtTitulo.setText(
+                            "CheckList - " + nomeLoja
+                    );
                 });
-    }*/
-
-    private int getYYYYMM() {
-        Calendar cal = Calendar.getInstance();
-        return cal.get(Calendar.YEAR) * 100 + (cal.get(Calendar.MONTH) + 1);
     }
 
-    private void calcularPercentualUsuario(String uid) {
+    /*
+     * Calcula a nota geral com base nas notas atribuídas
+     * pelo gerente às tarefas.
+     */
+    private void carregarNotaGeral() {
 
         db.collection("tarefas")
                 .get()
                 .addOnSuccessListener(query -> {
 
+                    if (query.isEmpty()) {
+
+                        txtNotaMensal.setText(
+                                "Nota Mensal: 0%"
+                        );
+
+                        return;
+                    }
+
                     final double[] somaNotas = {0};
                     final int[] tarefasComNota = {0};
                     final int[] tarefasProcessadas = {0};
 
-                    int totalTarefasGlobais = query.size();
+                    final int totalTarefas = query.size();
 
-                    if (totalTarefasGlobais == 0) {
-                        txtNotaMensal.setText("Nota Mensal: 0%");
-                        return;
-                    }
+                    for (DocumentSnapshot tarefaDoc :
+                            query.getDocuments()) {
 
-                    for (DocumentSnapshot tarefaDoc : query.getDocuments()) {
+                        String tarefaId =
+                                tarefaDoc.getId();
+
+                        String userId =
+                                tarefaDoc.getString("userId");
+
+                        if (userId == null || userId.isEmpty()) {
+
+                            tarefasProcessadas[0]++;
+
+                            verificarCalculoNotaGeral(
+                                    tarefasProcessadas[0],
+                                    totalTarefas,
+                                    somaNotas[0],
+                                    tarefasComNota[0]
+                            );
+
+                            continue;
+                        }
 
                         db.collection("tarefas")
-                                .document(tarefaDoc.getId())
+                                .document(tarefaId)
                                 .collection("notas")
-                                .document(uid)
+                                .document(userId)
                                 .get()
                                 .addOnSuccessListener(notaDoc -> {
 
                                     if (notaDoc.exists()) {
-                                        Long notaLong = notaDoc.getLong("nota");
 
-                                        int nota = notaLong != null ? notaLong.intValue() : 0;
+                                        Long nota =
+                                                notaDoc.getLong("nota");
 
-                                        somaNotas[0] += nota;
-                                        tarefasComNota[0]++;
+                                        if (nota != null) {
+
+                                            somaNotas[0] += nota;
+
+                                            tarefasComNota[0]++;
+                                        }
                                     }
 
                                     tarefasProcessadas[0]++;
 
-                                    if (tarefasProcessadas[0] == totalTarefasGlobais) {
+                                    verificarCalculoNotaGeral(
+                                            tarefasProcessadas[0],
+                                            totalTarefas,
+                                            somaNotas[0],
+                                            tarefasComNota[0]
+                                    );
+                                })
+                                .addOnFailureListener(e -> {
 
-                                        double percentualTotal = 0;
+                                    tarefasProcessadas[0]++;
 
-                                        if (tarefasComNota[0] > 0) {
-                                            double mediaNotas = somaNotas[0] / tarefasComNota[0];
-                                            percentualTotal = (mediaNotas / 5.0) * 100.0;
-                                        }
-
-                                        percentualTotal = Math.round(percentualTotal * 100.0) / 100.0;
-
-                                        txtNotaMensal.setText("Nota Mensal: " + percentualTotal + "%");
-                                    }
+                                    verificarCalculoNotaGeral(
+                                            tarefasProcessadas[0],
+                                            totalTarefas,
+                                            somaNotas[0],
+                                            tarefasComNota[0]
+                                    );
                                 });
                     }
-                });
+                })
+                .addOnFailureListener(e ->
+
+                        Toast.makeText(
+                                this,
+                                "Erro ao calcular nota: "
+                                        + e.getMessage(),
+                                Toast.LENGTH_SHORT
+                        ).show()
+                );
+    }
+
+    private void verificarCalculoNotaGeral(
+            int processadas,
+            int total,
+            double soma,
+            int quantidade
+    ) {
+
+        if (processadas == total) {
+            exibirNotaLoja(soma, quantidade);
+        }
+    }
+
+    private void exibirNotaLoja(
+            double somaNotas,
+            int tarefasComNota
+    ) {
+
+        double percentual = 0;
+
+        if (tarefasComNota > 0) {
+
+            double media =
+                    somaNotas / tarefasComNota;
+
+            percentual =
+                    (media / 5.0) * 100.0;
+        }
+
+        percentual =
+                Math.round(percentual * 100.0) / 100.0;
+
+        txtNotaMensal.setText(
+                "Nota Mensal: " + percentual + "%"
+        );
     }
 }

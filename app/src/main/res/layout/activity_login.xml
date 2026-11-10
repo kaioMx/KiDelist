@@ -64,7 +64,7 @@
                 android:layout_marginTop="20dp"
                 android:background="@drawable/bg_input_grey"
                 android:hint="🔒 Senha"
-                android:inputType="textPassword"
+                android:inputType="numberPassword"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:textSize="18sp" />

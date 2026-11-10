@@ -5,9 +5,12 @@ public class LojaRanking {
     private int posicao;
     private String nomeLoja;
     private String gerente;
-    private int pontos;
+    private double pontos;
 
-    public LojaRanking(int posicao, String nomeLoja, String gerente, int pontos) {
+    public LojaRanking() {
+    }
+
+    public LojaRanking(int posicao, String nomeLoja, String gerente, double pontos) {
         this.posicao = posicao;
         this.nomeLoja = nomeLoja;
         this.gerente = gerente;
@@ -18,7 +21,7 @@ public class LojaRanking {
         return posicao;
     }
 
-    public void setPosicao(int posicao){
+    public void setPosicao(int posicao) {
         this.posicao = posicao;
     }
 
@@ -26,11 +29,23 @@ public class LojaRanking {
         return nomeLoja;
     }
 
+    public void setNomeLoja(String nomeLoja) {
+        this.nomeLoja = nomeLoja;
+    }
+
     public String getGerente() {
         return gerente;
     }
 
-    public int getPontos() {
+    public void setGerente(String gerente) {
+        this.gerente = gerente;
+    }
+
+    public double getPontos() {
         return pontos;
+    }
+
+    public void setPontos(double pontos) {
+        this.pontos = pontos;
     }
 }
